@@ -21,7 +21,7 @@ document.addEventListener("DOMContentLoaded", function(event) {
 
     UI.toggleLoader("#loader");
 
-    const countrySlug = await UI.convertToSlug(country);
+    const countrySlug = UI.convertToSlug(country);
     // alert(countrySlug);
 
     const cities = await OpenAQService.getCities(countrySlug);
@@ -118,11 +118,10 @@ function validateForm(form) {
         "ES": "Spain",
         "FR": "France",
       }
-      return new Promise(resolve => {
-        resolve(
-            Object.keys(slugStorage).find(key => slugStorage[key] === countryName)
-        )
-      });
+      
+      return slugStorage[countryName] !== undefined 
+        ? slugStorage[countryName]
+        : null // Default value
     }
 
     return app
@@ -220,38 +219,47 @@ function validateForm(form) {
   const OpenAQService = (function(service) {
 
     service.getCities = async (country) => {
-      const citiesArr = [];
-      return new Promise(resolve => {
-        // Fetch data
-        var cities = fetch(`https://api.openaq.org/v1/latest?country=${country}&parameter=pm25`)
+      return fetch(`https://api.openaq.org/v1/latest?country=${country}&parameter=pm25`)
         // Parse JSON response
         .then(response => response.json())
         // Sort from the largest by value of first measurement 
         .then(response => response.results.sort((a, b) => b.measurements[0].value - a.measurements[0].value))
         // Make results unique by city
         .then(results => Object.values(
-          results.reduce((uniqueResults, result) => {
+            results.reduce((uniqueResults, result) => {
             if (uniqueResults[result.city] === undefined) {
-              uniqueResults[result.city] = result
+                uniqueResults[result.city] = result
             }
             return uniqueResults
-          }, {})
+            }, {})
         ))
         // Slice results to 10, because we want only 10 cities
         .then(results => results.slice(0, 10))
         // List results
-        .then(results => {
-          results.map((result) => {
-            citiesArr.push(result.city)
-          })
-          console.log(results);
-          console.log(citiesArr)
-        }).then(
-          () => resolve(citiesArr)
-        )
-      })
+        .then(results => results.map(result => result.city))
+      
+      // Or do this in async/await 
+
+      // let response = await fetch(`https://api.openaq.org/v1/latest?country=${country}&parameter=pm25`)
+      // response = await response.json()
+
+      // return Object.values(
+      //     response.results
+      //       .sort((a, b) => b.measurements[0].value - a.measurements[0].value)
+      //       .reduce((uniqueResults, result) => {
+      //         if (uniqueResults[result.city] === undefined) {
+      //           uniqueResults[result.city] = result
+      //         }
+      //         return uniqueResults
+      //       }, {})
+      //   )
+      //   .slice(0, 10)
+      //   .map(result => result.city)
+        
     } 
+
     return service
+
   })(OpenAQService || {})
 
 })
