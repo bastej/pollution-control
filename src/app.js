@@ -4,16 +4,22 @@ require("./favicon.ico");
 import map from 'lodash/map';
 
 document.addEventListener("DOMContentLoaded", function(event) {
+
+  var elems = document.querySelectorAll('.collapsible');
+  var instances = M.Collapsible.init(elems, {});
   
   document.querySelector("#country-search").addEventListener("submit", async (e)  => {
     e.preventDefault();    
-
     const country = document.querySelector("#country-name").value;
-
+  
     //validate form
     if(!validateForm(e.target)) {
       return false
     }
+    UI.clearElement(".results-header");
+    UI.clearElement("#cities-list");
+
+    UI.toggleLoader("#loader");
 
     const countrySlug = await UI.convertToSlug(country);
     // alert(countrySlug);
@@ -23,7 +29,7 @@ document.addEventListener("DOMContentLoaded", function(event) {
 
     const citiesInfo = await WikiService.getCitiesInfo(cities);
 
-    UI.renderCities(citiesInfo);
+    UI.renderCities(citiesInfo, country);
     // console.log("test1: ", citiesInfo);
   });
 
@@ -42,14 +48,24 @@ function validateForm(form) {
   function validateField(field, errors) {
     var fieldValid = field.validity.valid;
     if (fieldValid) {
-      // field.nextSibling.nextSibling.innerHTML = "";
-      field.classList.remove("invalid");
+      setAsValid(field);
     } else {
-      // field.nextSibling.nextSibling.innerHTML = field.dataset.errorMessage;
-      console.log(field.dataset.errorMessage);
-      field.classList.add("invalid");
+      field.onblur = () => {
+        if(field.value === "") setAsValid(field);
+      }
+      setAsInvalid(field);
       errors.push(field.dataset.errorMessage);
+      // window.field = field;
+      // console.log(field.dataset.errorMessage);
     }
+  }
+  function setAsValid(field){
+    field.parentNode.querySelector("span").innerHTML = "";
+    field.classList.remove("invalid");
+  }
+  function setAsInvalid(field){
+    field.parentNode.querySelector("span").innerHTML = field.dataset.errorMessage;
+    field.classList.add("invalid");
   }
   if (formValid) {
     return true;
@@ -61,15 +77,37 @@ function validateForm(form) {
  var UI = (function(app){
 
     //render items in DOM
-    app.renderCities = cities => {
+    app.renderCities = (cities, country) => {
       const container = document.querySelector("#cities-list");
-
+      const header = document.querySelector(".results-header");
       //use lodash map iterate through objects collection
+      header.innerHTML = `Most polluted cities in ${country}:`
+      UI.toggleLoader("#loader");
       map(cities, city => {
-        let item = document.createElement("p");
-        item.innerHTML += `${city.title}<br/> ${city.extract || "Lorem Ipsum"}`
+        const { title, extract } = city;
+        const item = document.createElement("li");
+        const desc = extract ? extract.replace(/<(?:.|\n)*?>/gm, '') 
+                             : "Here is no description about this place";
+        item.innerHTML = `
+        <div class="collapsible-header light-blue darken-1 white-text">
+          <i class="material-icons">location_city</i>${title}
+        </div>
+        <div class="collapsible-body ">
+          <span>${desc}</span>
+        </div>
+        `
         container.appendChild(item);
       })
+    }
+
+    app.toggleLoader = (element) => {
+      const loader = document.querySelector(element);
+      if (loader.classList.contains("active")) loader.classList.remove("active")
+      else loader.classList.add("active")
+    }
+
+    app.clearElement = element => {
+      document.querySelector(element).innerHTML = "";;
     }
     
     app.convertToSlug = (countryName) => {

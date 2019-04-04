@@ -1,4 +1,13 @@
-.invalid {
-  border-color: red;
-  color: red; 
+#country-search{
+  margin-top: 50px;
+}
+.borders-none{
+  border: none;
+  box-shadow: none;
+}
+#loader{
+  position: absolute;
+  margin: 0 auto;
+  left: 0;
+  right: 0;
 }

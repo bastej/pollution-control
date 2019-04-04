@@ -12,20 +12,49 @@
 
     <!-- Compiled and minified CSS -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
     <!-- Compiled and minified JavaScript -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
 
   </head>
 
   <body>
+    <nav>
+      <div class="nav-wrapper light-blue darken-1 white-text">
+        <a href="#" class="brand-logo center">
+          <i class="material-icons">grain</i>
+          Pollution Control
+        </a>
+      </div>
+    </nav>
     <div class="container">
       <div class="row">
-        <form id="country-search" novalidate> <!-- novalidate -->
-          <input id="country-name" pattern="Poland|Germany|Spain|France" type="search" placeholder="Entry country" autocomplete required/>
+        <form id="country-search" class="col s12" novalidate> <!-- novalidate -->
+          <div class="row">
+              <div class="input-field col s12">
+                  <i class="material-icons prefix">search</i>
+                <input id="country-name" name="country" type="text" pattern="Poland|Germany|Spain|France" data-error-message="Hint: Allowed countries: Poland, Germany, Spain, France" autofocus autocomplete required/>
+                <label for="country-name">Country</label>
+                <span class="helper-text"></span>
+              </div>
+          </div>
         </form>
       </div>
       <div class="row">
-        <div id="cities-list"></div> 
+        <h4 class="results-header"></h4>
+        <ul id="cities-list" class="collapsible col s12 borders-none">
+        </ul>
+        <div id="loader" class="preloader-wrapper big">
+            <div class="spinner-layer spinner-blue-only">
+              <div class="circle-clipper left">
+                <div class="circle"></div>
+              </div><div class="gap-patch">
+                <div class="circle"></div>
+              </div><div class="circle-clipper right">
+                <div class="circle"></div>
+              </div>
+            </div>
+          </div>
       </div>
     </div>
   </body>
