@@ -6,8 +6,20 @@ import map from 'lodash/map';
 document.addEventListener("DOMContentLoaded", function(event) {
   
   //init materialize accordion
-  const elems = document.querySelectorAll('.collapsible');
-  const instances = M.Collapsible.init(elems, {});
+  const accordion = document.querySelectorAll('.collapsible');
+  const accordionInstances = M.Collapsible.init(accordion, {});
+
+  var autocomplete = document.querySelectorAll('#country-name');
+  var autocompleteInstances = M.Autocomplete.init(autocomplete,
+    {
+      data: {
+        "Poland": null,
+        "Germany": null,
+        "Spain": null,
+        "France": null
+      }
+    }
+    );
   
   document.querySelector("#country-search").addEventListener("submit", async (e)  => {
     //stop default form action
@@ -20,7 +32,7 @@ document.addEventListener("DOMContentLoaded", function(event) {
       return false
     }
     //when input value is correct then save to storage
-    // StoreService.save("country", country);
+    StoreService.save("country", country);
 
     UIService.clearElement(".results-header");
     UIService.clearElement("#cities-list");
@@ -34,7 +46,7 @@ document.addEventListener("DOMContentLoaded", function(event) {
     const citiesInfo = await WikipediaService.getCitiesInfo(cities);
 
     UIService.renderCities(citiesInfo, country);
-    // StoreService.get("country");
+    StoreService.get("country");
 
   });
 
@@ -116,34 +128,34 @@ document.addEventListener("DOMContentLoaded", function(event) {
       action === "enable" ? icon.textContent = "my_location" : icon.textContent = "location_disabled"
     }
 
-    getLocation() {
-      if (navigator.geolocation) {
-        //get user location
-        navigator.geolocation.getCurrentPosition((position) => {
-          const { latitude, longitude } = position.coords;
-          //fetch user's country with location coords
-          fetch(`http://api.geonames.org/countryCode?lat=${latitude}&lng=${longitude}&type=json&username=bastej`)
-          .then(response => response.json())
-          .then(response => {
-            //set input value to detected country
-            this.toggleLocationIcon("enable");
-            this.setInputValue("#country-name", response.countryName)
-            this.showAlert("Country detected automatically", "success")
-          })
-        }, 
-          () => {
-            this.toggleLocationIcon("disable");
-            this.showAlert("Location is disabled, enable the location to automatically detect the country.", "warning")
-          }   
-        );
-      }
-    }
+    // getLocation() {
+    //   if (navigator.geolocation) {
+    //     //get user location
+    //     navigator.geolocation.getCurrentPosition((position) => {
+    //       const { latitude, longitude } = position.coords;
+    //       //fetch user's country with location coords
+    //       fetch(`http://api.geonames.org/countryCode?lat=${latitude}&lng=${longitude}&type=json&username=bastej`)
+    //       .then(response => response.json())
+    //       .then(response => {
+    //         //set input value to detected country
+    //         this.toggleLocationIcon("enable");
+    //         this.setInputValue("#country-name", response.countryName)
+    //         this.showAlert("Country detected automatically", "success")
+    //       })
+    //     }, 
+    //       () => {
+    //         this.toggleLocationIcon("disable");
+    //         this.showAlert("Location is disabled, enable the location to automatically detect the country.", "warning")
+    //       }   
+    //     );
+    //   }
+    // }
 
 
   } 
   const UIService = new UI(); 
   //get location if enabled
-  UIService.getLocation();
+  // UIService.getLocation();
 
   //help to fetch data with jsonp from API that don't support CORS
   const loadJSONP = (function(){
@@ -206,11 +218,11 @@ document.addEventListener("DOMContentLoaded", function(event) {
         }
       }
       function setAsValid(field) {
-        field.parentNode.querySelector("span").innerHTML = "";
+        field.parentNode.querySelector("span.helper-text").innerHTML = "";
         field.classList.remove("invalid");
       }
       function setAsInvalid(field){
-        field.parentNode.querySelector("span").innerHTML = field.dataset.errorMessage;
+        field.parentNode.querySelector("span.helper-text").innerHTML = field.dataset.errorMessage;
         field.classList.add("invalid");
       }
       if (formValid) {
@@ -232,6 +244,8 @@ document.addEventListener("DOMContentLoaded", function(event) {
     
   }
   var StoreService = new Store();
+  UIService.setInputValue("#country-name", StoreService.get("country"))
+  
 
   class Wikipedia {
     
