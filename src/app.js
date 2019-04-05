@@ -5,6 +5,7 @@ import map from 'lodash/map';
 
 document.addEventListener("DOMContentLoaded", function(event) {
   
+  const form = document.querySelector("#country-search");
   //init materialize accordion
   const accordion = document.querySelectorAll('.collapsible');
   const accordionInstances = M.Collapsible.init(accordion, {});
@@ -17,40 +18,38 @@ document.addEventListener("DOMContentLoaded", function(event) {
         "Germany": null,
         "Spain": null,
         "France": null
+      },
+      onAutocomplete: () => form.dispatchEvent(new Event('submit'))
+    }
+  );
+
+    form.addEventListener("submit", async e => {
+      //stop default form action
+      e.preventDefault();
+      const country = document.querySelector("#country-name").value;
+
+      //validate form
+      if(!validateForm(e.target)) {
+        return false
       }
-    }
-    );
-  
-  document.querySelector("#country-search").addEventListener("submit", async (e)  => {
-    //stop default form action
-    e.preventDefault();
+      //when input value is correct then save to storage
+      StoreService.save("country", country);
 
-    const country = document.querySelector("#country-name").value;
-  
-    //validate form
-    if(!validateForm(e.target)) {
-      return false
-    }
-    //when input value is correct then save to storage
-    StoreService.save("country", country);
+      UIService.clearElement(".results-header");
+      UIService.clearElement("#cities-list");
+      //show loader
+      UIService.toggleLoader("#loader");
 
-    UIService.clearElement(".results-header");
-    UIService.clearElement("#cities-list");
-    //show loader
-    UIService.toggleLoader("#loader");
+      const countrySlug = UIService.convertToSlug(country);
 
-    const countrySlug = UIService.convertToSlug(country);
+      const cities = await OpenAQService.getCities(countrySlug);
 
-    const cities = await OpenAQService.getCities(countrySlug);
+      const citiesInfo = await WikipediaService.getCitiesInfo(cities);
 
-    const citiesInfo = await WikipediaService.getCitiesInfo(cities);
-
-    UIService.renderCities(citiesInfo, country);
-    StoreService.get("country");
-
-  });
-
-
+      UIService.renderCities(citiesInfo, country);
+      StoreService.get("country");
+    });
+    
 // instancje nazwac const UIService, a constructor UI
  class UI {
 
