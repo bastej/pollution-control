@@ -1,6 +1,15 @@
-#country-search{
-  margin-top: 50px;
+nav{
+  margin-bottom: 50px;
 }
+.alert{
+  padding: 20px;
+  overflow: hidden;
+  transition: all 300ms ease-out;
+  &-container{
+    margin: 20px auto;
+  }
+}
+
 .borders-none{
   border: none;
   box-shadow: none;
@@ -10,4 +19,19 @@
   margin: 0 auto;
   left: 0;
   right: 0;
+  z-index: -1;
+}
+
+#location-icon{
+  margin-right: 30px;
+}
+
+#cities-list {
+  li {
+    &:hover div:first-child {
+      padding-left: 40px;
+      font-weight: bold;
+      transition: all 200ms ease-in-out;
+    }
+  }
 }

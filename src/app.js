@@ -4,85 +4,53 @@ require("./favicon.ico");
 import map from 'lodash/map';
 
 document.addEventListener("DOMContentLoaded", function(event) {
-
-  var elems = document.querySelectorAll('.collapsible');
-  var instances = M.Collapsible.init(elems, {});
+  
+  //init materialize accordion
+  const elems = document.querySelectorAll('.collapsible');
+  const instances = M.Collapsible.init(elems, {});
   
   document.querySelector("#country-search").addEventListener("submit", async (e)  => {
-    e.preventDefault();    
+    //stop default form action
+    e.preventDefault();
+
     const country = document.querySelector("#country-name").value;
   
     //validate form
     if(!validateForm(e.target)) {
       return false
     }
-    UI.clearElement(".results-header");
-    UI.clearElement("#cities-list");
+    //when input value is correct then save to storage
+    // StoreService.save("country", country);
 
-    UI.toggleLoader("#loader");
+    UIService.clearElement(".results-header");
+    UIService.clearElement("#cities-list");
+    //show loader
+    UIService.toggleLoader("#loader");
 
-    const countrySlug = UI.convertToSlug(country);
-    // alert(countrySlug);
+    const countrySlug = UIService.convertToSlug(country);
 
     const cities = await OpenAQService.getCities(countrySlug);
-    // console.log("powyzej sa cities")
 
-    const citiesInfo = await WikiService.getCitiesInfo(cities);
+    const citiesInfo = await WikipediaService.getCitiesInfo(cities);
 
-    UI.renderCities(citiesInfo, country);
-    // console.log("test1: ", citiesInfo);
+    UIService.renderCities(citiesInfo, country);
+    // StoreService.get("country");
+
   });
 
-//form validation obj
-function validateForm(form) {
-  var fields = form.querySelectorAll("[required]");
-  var errors = [];
-  var formValid = validate(errors);
-  function validate(errors) {
-    //IE support
-    for (var i = 0; i < fields.length; i++) {
-      validateField(fields[i], errors);
-    }
-    return !errors.length;
-  }
-  function validateField(field, errors) {
-    var fieldValid = field.validity.valid;
-    if (fieldValid) {
-      setAsValid(field);
-    } else {
-      field.onblur = () => {
-        if(field.value === "") setAsValid(field);
-      }
-      setAsInvalid(field);
-      errors.push(field.dataset.errorMessage);
-      // window.field = field;
-      // console.log(field.dataset.errorMessage);
-    }
-  }
-  function setAsValid(field){
-    field.parentNode.querySelector("span").innerHTML = "";
-    field.classList.remove("invalid");
-  }
-  function setAsInvalid(field){
-    field.parentNode.querySelector("span").innerHTML = field.dataset.errorMessage;
-    field.classList.add("invalid");
-  }
-  if (formValid) {
-    return true;
-  } else {
-    return false;
-  }
-}
 
- var UI = (function(app){
+// instancje nazwac const UIService, a constructor UI
+ class UI {
 
     //render items in DOM
-    app.renderCities = (cities, country) => {
+    renderCities(cities, country) {
       const container = document.querySelector("#cities-list");
       const header = document.querySelector(".results-header");
       //use lodash map iterate through objects collection
-      header.innerHTML = `Most polluted cities in ${country}:`
-      UI.toggleLoader("#loader");
+      header.innerHTML = `Cities with the most polluted air in ${country}:`
+      //hide loader
+      this.toggleLoader("#loader");
+
       map(cities, city => {
         const { title, extract } = city;
         const item = document.createElement("li");
@@ -100,23 +68,23 @@ function validateForm(form) {
       })
     }
 
-    app.toggleLoader = (element) => {
+    toggleLoader(element) {
       const loader = document.querySelector(element);
       if (loader.classList.contains("active")) loader.classList.remove("active")
       else loader.classList.add("active")
     }
 
-    app.clearElement = element => {
-      document.querySelector(element).innerHTML = "";;
+    clearElement(element) {
+      document.querySelector(element).innerHTML = "";
     }
-    
-    app.convertToSlug = (countryName) => {
+
+    convertToSlug(countryName) {
       
       const slugStorage = {
-        "PL": "Poland",
-        "DE": "Germany",
-        "ES": "Spain",
-        "FR": "France",
+        "Poland" : "PL",
+        "Germany": "DE",
+        "Spain": "ES",
+        "France": "FR",
       }
       
       return slugStorage[countryName] !== undefined 
@@ -124,19 +92,66 @@ function validateForm(form) {
         : null // Default value
     }
 
-    return app
-  })(UI || {});
-  
+    showAlert(text, type) {
+      const alertContainer = document.querySelector(".alert-container");
+      const alert = document.createElement("div");
+      alert.classList.add("alert", type==="success"?"green":"yellow", "lighten-4", "center-align");
+      alert.innerHTML = `<p>${text}</p>`;
+      alertContainer.appendChild(alert)
+      setTimeout(
+        () => {
+          alert.style.height = 0
+          alert.style.padding = 0
+        }
+        , 4500
+      )
+    }
+
+    setInputValue(input, value) {
+      document.querySelector(input).value = value;
+    }
+
+    toggleLocationIcon(action) {
+      const icon = document.querySelector("#location-icon");
+      action === "enable" ? icon.textContent = "my_location" : icon.textContent = "location_disabled"
+    }
+
+    getLocation() {
+      if (navigator.geolocation) {
+        //get user location
+        navigator.geolocation.getCurrentPosition((position) => {
+          const { latitude, longitude } = position.coords;
+          //fetch user's country with location coords
+          fetch(`http://api.geonames.org/countryCode?lat=${latitude}&lng=${longitude}&type=json&username=bastej`)
+          .then(response => response.json())
+          .then(response => {
+            //set input value to detected country
+            this.toggleLocationIcon("enable");
+            this.setInputValue("#country-name", response.countryName)
+            this.showAlert("Country detected automatically", "success")
+          })
+        }, 
+          () => {
+            this.toggleLocationIcon("disable");
+            this.showAlert("Location is disabled, enable the location to automatically detect the country.", "warning")
+          }   
+        );
+      }
+    }
+
+
+  } 
+  const UIService = new UI(); 
+  //get location if enabled
+  UIService.getLocation();
+
   //help to fetch data with jsonp from API that don't support CORS
   const loadJSONP = (function(){
     return function(url, callback, config) {
-      // INIT
       const name = "_jsonp_" + Math.floor(Date.now() / 100);
       let params;
-      //
       if(Object.keys(config).length) {
-        let checkedConfig = {...config, format: "json"};//check json format exist
-        console.log(checkedConfig);
+        let checkedConfig = {...config, format: "json"};//check if json format exist
         params = Object.keys(checkedConfig).reduce(
           (newArr, key) => {
             newArr.push(key+'='+encodeURIComponent(checkedConfig[key]));
@@ -164,11 +179,66 @@ function validateForm(form) {
     };
   })();
 
-  const WikiService = (function(service) {
+  //form validation obj
+  const validateForm = (function(){
+    return function(form) {
+      var fields = form.querySelectorAll("[required]");
+      var errors = [];
+      var formValid = validate(errors);
+      function validate(errors) {
+        //IE support
+        for (var i = 0; i < fields.length; i++) {
+          validateField(fields[i], errors);
+        }
+        return !errors.length;
+      }
+      function validateField(field, errors) {
+        var fieldValid = field.validity.valid;
+        if (fieldValid) {
+          setAsValid(field);
+        } else {
+          //clear field view when is empty 
+          field.onblur = () => {
+            if(field.value === "") setAsValid(field);
+          }
+          setAsInvalid(field);
+          errors.push(field.dataset.errorMessage);
+        }
+      }
+      function setAsValid(field) {
+        field.parentNode.querySelector("span").innerHTML = "";
+        field.classList.remove("invalid");
+      }
+      function setAsInvalid(field){
+        field.parentNode.querySelector("span").innerHTML = field.dataset.errorMessage;
+        field.classList.add("invalid");
+      }
+      if (formValid) {
+        return true;
+      } else {
+        return false;
+      }
+    }
+  })();
 
-    service.getCitiesInfo = citiesArr => {
+  class Store {
+
+    save(key, value) {
+      localStorage.setItem(key, JSON.stringify(value));
+    }
+    get(key) {
+      return JSON.parse(localStorage.getItem(key));
+    }
+    
+  }
+  var StoreService = new Store();
+
+  class Wikipedia {
+    
+    //get cities descriptions
+    getCitiesInfo(citiesArr) {
       
-        const titles = citiesArr.join("|");
+      const titles = citiesArr.join("|");
 
         const config = {
           action: "query",
@@ -178,12 +248,9 @@ function validateForm(form) {
         }
 
         return new Promise(resolve => {
-
           loadJSONP(
             "https://en.wikipedia.org/w/api.php",
             function(data) {
-              console.log("this: ", this === window)
-              console.log(data.query.pages);
               resolve(data.query.pages);
             },
             config
@@ -204,62 +271,36 @@ function validateForm(form) {
           //   }
           //   });
 
-
-            // const citiesString = encodeURI(citiesArr.join("|"));
-            // var citiesInfo = fetch(`https://en.wikipedia.org/w/api.php?action=query&prop=extracts&format=json&exintro=true&titles=Katowice|Opole`)
-            // .then(
-            //   results => console.log("wiki:", results)
-            // )
-
         })
     }
-    return service
-  })(WikiService || {})
+  }
+  const WikipediaService = new Wikipedia();
 
-  const OpenAQService = (function(service) {
+  class OpenAQ {
 
-    service.getCities = async (country) => {
+    //fetch 10 most air polluted cities
+    getCities(country) {
       return fetch(`https://api.openaq.org/v1/latest?country=${country}&parameter=pm25`)
-        // Parse JSON response
-        .then(response => response.json())
-        // Sort from the largest by value of first measurement 
-        .then(response => response.results.sort((a, b) => b.measurements[0].value - a.measurements[0].value))
-        // Make results unique by city
-        .then(results => Object.values(
-            results.reduce((uniqueResults, result) => {
-            if (uniqueResults[result.city] === undefined) {
-                uniqueResults[result.city] = result
-            }
-            return uniqueResults
-            }, {})
-        ))
-        // Slice results to 10, because we want only 10 cities
-        .then(results => results.slice(0, 10))
-        // List results
-        .then(results => results.map(result => result.city))
-      
-      // Or do this in async/await 
+      // Parse JSON response
+      .then(response => response.json())
+      // Sort from the largest by value of first measurement 
+      .then(response => response.results.sort((a, b) => b.measurements[0].value - a.measurements[0].value))
+      // Make results unique by city
+      .then(results => Object.values(
+          results.reduce((uniqueResults, result) => {
+          if (uniqueResults[result.city] === undefined) {
+              uniqueResults[result.city] = result
+          }
+          return uniqueResults
+          }, {})
+      ))
+      // Slice results to 10, because we want only 10 cities
+      .then(results => results.slice(0, 10))
+      // List results
+      .then(results => results.map(result => result.city))
+    }
 
-      // let response = await fetch(`https://api.openaq.org/v1/latest?country=${country}&parameter=pm25`)
-      // response = await response.json()
-
-      // return Object.values(
-      //     response.results
-      //       .sort((a, b) => b.measurements[0].value - a.measurements[0].value)
-      //       .reduce((uniqueResults, result) => {
-      //         if (uniqueResults[result.city] === undefined) {
-      //           uniqueResults[result.city] = result
-      //         }
-      //         return uniqueResults
-      //       }, {})
-      //   )
-      //   .slice(0, 10)
-      //   .map(result => result.city)
-        
-    } 
-
-    return service
-
-  })(OpenAQService || {})
+  }
+  const OpenAQService = new OpenAQ();
 
 })

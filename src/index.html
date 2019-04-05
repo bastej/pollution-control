@@ -21,22 +21,28 @@
   <body>
     <nav>
       <div class="nav-wrapper light-blue darken-1 white-text">
-        <a href="#" class="brand-logo center">
-          <i class="material-icons">grain</i>
-          Pollution Control
-        </a>
+        <a href="#" class="brand-logo center">Pollution Control<i class="material-icons">grain</i></a>
+        <ul class="right">
+          <li>
+            <i id="location-icon" class="material-icons">sealocation_searching</i>
+          </li>
+        </ul>
       </div>
     </nav>
     <div class="container">
       <div class="row">
+        <div class="col s12 alert-container">
+        </div>
+      <div class="row">
         <form id="country-search" class="col s12" novalidate> <!-- novalidate -->
           <div class="row">
               <div class="input-field col s12">
-                  <i class="material-icons prefix">search</i>
+                <i class="material-icons prefix">search</i>
                 <input id="country-name" name="country" type="text" pattern="Poland|Germany|Spain|France" data-error-message="Hint: Allowed countries: Poland, Germany, Spain, France" autofocus autocomplete required/>
                 <label for="country-name">Country</label>
                 <span class="helper-text"></span>
               </div>
+              
           </div>
         </form>
       </div>
